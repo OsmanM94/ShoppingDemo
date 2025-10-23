@@ -9,7 +9,7 @@ struct ContentView: View {
             VStack {
                 switch viewModel.viewState {
                 case .empty:
-                    ContentUnavailableView("Sold out.", systemImage: "tray.fill")
+                    ContentUnavailableView("Sold out. Jog on", systemImage: "tray.fill")
               
                 case .loading:
                     ProgressView()
