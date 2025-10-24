@@ -38,10 +38,6 @@ struct ProductListView: View {
                 }
             }
         }
-        .refreshable(action: {
-            viewModel.clearCache()
-            await viewModel.loadProducts()
-        })
         .badgeProminence(.decreased)
         .navigationDestination(for: Product.self) { product in
             ProductDetailView(product: product)

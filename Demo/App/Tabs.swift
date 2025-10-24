@@ -24,7 +24,6 @@ struct Tabs: View {
             Tab("Bag", systemImage: "bag", value: TabViews.bag) {
                 BagView()
             }
-            // .disabled(bagViewModel.itemCount == 0)
             .badge(bagViewModel.itemCount)
             
             Tab(value: TabViews.search, role: .search) {

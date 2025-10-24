@@ -16,11 +16,7 @@ struct ContentView: View {
                     
                 case .loaded(_ ):
                   ProductListView()
-                        .searchable(
-                            text: Bindable(viewModel).searchText,
-                            placement: .navigationBarDrawer,
-                            prompt: "Clothing, electronics..."
-                        )
+                     
                 
                 case .error(let error):
                     ContentUnavailableView {
@@ -64,6 +60,15 @@ struct ContentView: View {
                 }
             }
         }
+        .searchable(
+            text: Bindable(viewModel).searchText,
+            placement: .navigationBarDrawer,
+            prompt: "Clothing, electronics..."
+        )
+        .refreshable(action: {
+            viewModel.clearCache()
+            await viewModel.loadProducts()
+        })
         .task {
             if viewModel.products.isEmpty {
                 await viewModel.loadProducts()

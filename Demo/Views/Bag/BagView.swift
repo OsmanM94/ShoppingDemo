@@ -7,55 +7,56 @@ struct BagView: View {
     
     var body: some View {
         NavigationStack {
-            Group {
+            List {
+                if !viewModel.bagItems.isEmpty {
+                    ForEach(viewModel.bagItems, id: \.id) { bagItem in
+                        BagItemRow(bagItem: bagItem)
+                    }
+                    .onDelete { indexSet in
+                        withAnimation {
+                            viewModel.removeFromBag(at: indexSet)
+                        }
+                    }
+                    
+                    Section {
+                        HStack {
+                            Text("Total")
+                                .font(.headline)
+                            
+                            Spacer()
+                            
+                            Text(viewModel.bagTotal, format: .currency(code: Locale.current.currency?.identifier ?? "GBP"))
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .contentTransition(.numericText())
+                                .animation(.default, value: viewModel.bagTotal)
+                        }
+                    }
+                    
+                    Section {
+                        Button(action: {}) {
+                            Text("Checkout")
+                                .font(.headline)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .controlSize(.extraLarge)
+                        .buttonSizing(.flexible)
+                        .listRowBackground(Color.clear)
+                    }
+                }
+            }
+            .overlay {
                 if viewModel.bagItems.isEmpty {
                     ContentUnavailableView(
                         "Your bag is empty",
                         systemImage: "bag"
                     )
-                } else {
-                    List {
-                        ForEach(viewModel.bagItems) { bagItem in
-                            BagItemRow(bagItem: bagItem)
-                        }
-                        .onDelete { indexSet in
-                            withAnimation {
-                                viewModel.removeFromBag(at: indexSet)
-                            }
-                        }
-                        
-                        Section {
-                            HStack {
-                                Text("Total")
-                                    .font(.headline)
-                                
-                                Spacer()
-                                
-                                Text(viewModel.bagTotal, format: .currency(code: Locale.current.currency?.identifier ?? "GBP"))
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .contentTransition(.numericText())
-                                    .animation(.default, value: viewModel.bagTotal)
-                            }
-                        }
-                        
-                        Section {
-                            Button(action: {
-                                
-                            }, label: {
-                                Text("Checkout")
-                                    .font(.headline)
-                            })
-                            .buttonStyle(.glassProminent)
-                            .controlSize(.extraLarge)
-                            .buttonSizing(.flexible)
-                            .listRowBackground(Color.clear)
-                        }
-                    }
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            EditButton()
-                        }
+                }
+            }
+            .toolbar {
+                if !viewModel.bagItems.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        EditButton()
                     }
                 }
             }
