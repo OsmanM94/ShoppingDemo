@@ -18,6 +18,24 @@ final class ProductsViewModel {
     var showAddToBagSheet: Bool = false
     var selectedProduct: Product? = nil
     
+    // Configure URLSession with cache
+    private var urlSession: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        
+        // Configure cache (10 MB memory, 50 MB disk)
+        configuration.urlCache = URLCache(
+            memoryCapacity: 10 * 1024 * 1024,
+            diskCapacity: 50 * 1024 * 1024
+        )
+        
+        // Cache policy: return cached data if available, otherwise fetch
+        configuration.requestCachePolicy = .returnCacheDataElseLoad
+        
+        print("DEBUG: URLCache configured: Memory=10MB, Disk=50MB")
+        
+        return URLSession(configuration: configuration)
+    }()
+    
     var categorizedProducts: [ProductCategory] {
         let grouped = Dictionary(grouping: filteredProducts, by: { $0.category })
         return grouped.map { ProductCategory(name: $0.key, products: $0.value) }
@@ -43,13 +61,24 @@ final class ProductsViewModel {
             return
         }
         
+        // Check if cached response exists
+        if let cachedResponse = urlSession.configuration.urlCache?.cachedResponse(for: URLRequest(url: url)) {
+            print("DEBUG: Cache HIT - Loading from cache")
+            print("DEBUG: Cached data size: \(cachedResponse.data.count) bytes")
+        } else {
+            print("DEBUG: Cache MISS - Loading from network")
+        }
+        
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await urlSession.data(from: url)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 viewState = .error(.invalidResponse)
                 return
             }
+            
+            print("DEBUG: Response status code: \(httpResponse.statusCode)")
+            print("DEBUG: Data size: \(data.count) bytes")
             
             guard (200...299).contains(httpResponse.statusCode) else {
                 viewState = .error(.serverError(httpResponse.statusCode))
@@ -58,12 +87,13 @@ final class ProductsViewModel {
             
             let decodedProducts = try JSONDecoder().decode([Product].self, from: data)
             
-            // Hold on... Let's store the products first, then update the view state... :)
-            self.products = decodedProducts
+            print("DEBUG: Decoded \(decodedProducts.count) products")
             
+            self.products = decodedProducts
             self.viewState = decodedProducts.isEmpty ? .empty : .loaded(decodedProducts)
             
         } catch let urlError as URLError {
+            print("DEBUG: URLError: \(urlError.code)")
             switch urlError.code {
             case .notConnectedToInternet, .networkConnectionLost:
                 viewState = .error(.noInternetConnection)
@@ -75,7 +105,13 @@ final class ProductsViewModel {
                 viewState = .error(.networkError(urlError.localizedDescription))
             }
         } catch {
+            print("DEBUG: Error: \(error.localizedDescription)")
             viewState = .error(.networkError(error.localizedDescription))
         }
+    }
+    
+    func clearCache() {
+        urlSession.configuration.urlCache?.removeAllCachedResponses()
+        print("DEBUG: Cache cleared")
     }
 }
